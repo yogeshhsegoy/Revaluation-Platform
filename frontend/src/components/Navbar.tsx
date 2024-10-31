@@ -1,4 +1,6 @@
-function Navbar() {
+import {useNavigate} from 'react-router-dom';
+function Navbar(){
+    const navigate = useNavigate();
     return (
         // fixed top-0 left-0 w-full  shadow-2xl
     <div className={"fixed top-0 left-0 w-full bg-blue-300  sm:flex sm:justify-between sm:items-center px-4 py-2 border-gray-500 border-b-2"}>
@@ -25,7 +27,11 @@ function Navbar() {
                 <p className={"cursor-pointer flex justify-center items-center"}>Home</p>
                 <p className={"cursor-pointer flex justify-center items-center"}>Contact Us</p>
                 <button
-                    className="bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200">
+                    className="bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200"
+                    onClick={() => {
+                        navigate("/signin");
+                    }}
+                >
                     Sign in
                 </button>
             </div>
