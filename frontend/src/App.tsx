@@ -1,11 +1,14 @@
-import Navbar from "./components/Navbar.tsx";
-import Landing from "./components/Landing.tsx";
+import {BrowserRouter,Routes,Route} from "react-router-dom";
+import Landing from "./pages/Landing.tsx";
+
 function App(){
     return (
-        <div>
-            <Navbar ></Navbar>
-            <Landing></Landing>
-        </div>
+        <BrowserRouter>
+            <Routes>
+                <Route path={"/"} element={<Landing/>}></Route>
+                <Route path={"/signin"} element={<Landing/>}></Route>
+            </Routes>
+        </BrowserRouter>
     )
 }
 

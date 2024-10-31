@@ -1,7 +1,7 @@
 function Navbar() {
     return (
-        // fixed top-0 left-0 w-full
-    <div className={"sm:flex sm:justify-between sm:items-center px-4 py-2 shadow-2xl"}>
+        // fixed top-0 left-0 w-full  shadow-2xl
+    <div className={"fixed top-0 left-0 w-full bg-blue-300  sm:flex sm:justify-between sm:items-center px-4 py-2 border-gray-500 border-b-2"}>
             <div className={""}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100"  width="250" height="70">
                     <circle cx="50" cy="50" r="40" fill="#1E90FF"/>
@@ -24,9 +24,12 @@ function Navbar() {
             <div className={"grid grid-cols-3 gap-4"}>
                 <p className={"cursor-pointer flex justify-center items-center"}>Home</p>
                 <p className={"cursor-pointer flex justify-center items-center"}>Contact Us</p>
-                <button className={"px-4 py-2 bg-blue-400 rounded-md"}>Sign in</button>
+                <button
+                    className="bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200">
+                    Sign in
+                </button>
             </div>
-        </div>
+    </div>
     )
 }
 
