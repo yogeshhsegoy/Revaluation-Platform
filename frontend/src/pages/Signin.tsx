@@ -1,12 +1,96 @@
 import Input from "../components/Input";
-import {useState} from "react";
+import { useState} from "react";
+import {useNavigate} from "react-router-dom";
+import axios from "axios";
+import useRedirect from "../hooks/useRedirect.tsx";
+//import {Simulate} from "react-dom/test-utils";
+//import error = Simulate.error;
+enum User{
+    student,
+    teacher,
+    admin
+}
+
+
 
 function Signin() {
+    useRedirect();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [type, setType] = useState("student");
+    const [type, setType] = useState(User.student);
+    const [notification,setNotification] = useState("");
+    const [view,setView] = useState(false);
+    const navigate = useNavigate();
+    //console.log(notification,view);
+    const onClickHandler = (): void => {
+        if (type === User.student) {
+            axios.post("http://localhost:3000/student/login",{username:username,password:password})
+                .then((response) => {
+                    const data : any = response.data;
+                    if(data.msg === "success"){
+                        const token: string = "Bearer " + data.token;
+                        localStorage.setItem("easyRevalToken", token);
+                        navigate("/student")
+
+                    }
+                })
+                .catch((error:any)=>{
+                    if(error.response){
+                        setNotification(error.response.data.msg);
+                        setView(true);
+                    }
+                })
+
+
+        }
+        else if(type == User.teacher) {
+
+            axios.post("http://localhost:3000/teacher/login",{username:username,password:password})
+                .then((response) => {
+                    const data:any = response.data;
+                    if(data.msg === "success"){
+                        const token: string = "Bearer " + data.token;
+                        localStorage.setItem("easyRevalToken", token);
+                        navigate("/teacher")
+                    }
+                })
+                .catch((error:any)=>{
+                    if(error.response){
+                        setNotification(error.response.data.msg);
+                        setView(true);
+                    }
+                })
+
+
+        }
+        else if(type == User.admin) {
+
+            axios.post("http://localhost:3000/admin/login",{username:username,password:password})
+                .then((response) => {
+                    const data : any = response.data;
+                    if(data.msg === "success"){
+                        const token: string = "Bearer " + data.token;
+                        localStorage.setItem("easyRevalToken", token);
+                        navigate("/admin");
+                    }
+                })
+                .catch((error:any)=>{
+                    if(error.response){
+                        setNotification(error.response.data.msg);
+                        setView(true);
+                    }
+                })
+
+
+        }
+    }
     return (
-    <div className={"w-full h-screen flex justify-center items-center"}>
+    <div className={"w-full h-screen flex flex-col justify-center items-center"}>
+        <div className={"text-xl font-semibold text-red-400"}>
+        {
+            view?notification+" !!!":" "
+        }
+        </div>
         <div className={"shadow-2xl p-8"}>
             <div className={"flex justify-center"}>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="250" height="70">
@@ -40,23 +124,25 @@ function Signin() {
             }></Input>
             <p>Choose the type of Login</p>
             <div className={"flex items-center justify-around py-2"}>
-                <input type={"radio"} id={"admin"} value={"admin"} checked={type === "admin"} onChange={() => {
-                    setType("admin");
+                <input type={"radio"} id={"admin"} value={"admin"} checked={type === User.admin} onChange={() => {
+                    setType(User.admin);
                 }}/>
                 <label htmlFor={"admin"} className={"px-2"}>Admin</label>
 
-                <input type={"radio"} id={"teacher"} value={"teacher"} checked={type === "teacher"} onChange={() => {
-                    setType("teacher");
+                <input type={"radio"} id={"teacher"} value={"teacher"} checked={type === User.teacher} onChange={() => {
+                    setType(User.teacher);
                 }}/>
                 <label htmlFor={"teacher"} className={"px-2"}>Teacher</label>
 
-                <input type={"radio"} id={"student"} value={"student"} checked={type === "student"} onChange={() => {
-                    setType("student");
+                <input type={"radio"} id={"student"} value={"student"} checked={type === User.student} onChange={() => {
+                    setType(User.student);
                 }}/>
                 <label htmlFor={"student"} className={"px-2"}>Student</label>
             </div>
             <button
-                className="w-full bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200">
+                className="w-full bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200"
+                onClick={onClickHandler}
+            >
                 Sign in
             </button>
         </div>

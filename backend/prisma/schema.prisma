@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id               Int       @id @default(autoincrement())
+  code             String    @unique @db.VarChar(4)
+  organizationName String
+  students         Student[]
+  teachers         Teacher[]
+  admin            Admin[]
+  subjects         Subject[]
+  exams            Exam[]
+}
+
+model Student {
+  id             Int          @id @default(autoincrement())
+  name           String
+  username       String       @unique
+  password       String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int
+}
+
+model Teacher {
+  id             Int          @id @default(autoincrement())
+  name           String
+  username       String       @unique
+  password       String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  subjects       Subject[]
+}
+
+model Admin {
+  id             Int          @id @default(autoincrement())
+  name           String
+  username       String       @unique
+  password       String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int
+}
+
+model Subject {
+  id             Int          @id @default(autoincrement())
+  name           String
+  subjectCode    String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int
+  paper          Paper[]
+  teacher        Teacher      @relation(fields: [teacherId], references: [id])
+  teacherId      Int
+}
+
+model Exam {
+  id             Int          @id @default(autoincrement())
+  paper          Paper[]
+  startTime      DateTime
+  endTime        DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId Int
+}
+
+model Paper {
+  id               Int            @id @default(autoincrement())
+  marks            Int
+  questionPaperUrl String         @unique
+  subjectId        Int
+  subject          Subject        @relation(fields: [subjectId], references: [id])
+  examId           Int
+  exam             Exam           @relation(fields: [examId], references: [id])
+  answersheets     AnswerSheets[]
+}
+
+model AnswerSheets {
+  id             Int     @id @default(autoincrement())
+  marksScored    Int
+  answerPaperUrl String  @unique
+  paperId        Int
+  paper          Paper   @relation(fields: [paperId], references: [id])
+  applyReval     Boolean
+  RevalDone      Boolean
+}
