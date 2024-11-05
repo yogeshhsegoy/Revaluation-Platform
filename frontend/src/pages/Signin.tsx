@@ -3,6 +3,8 @@ import { useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "axios";
 import useRedirect from "../hooks/useRedirect.tsx";
+import {USerType} from "../stores/atoms/UserType.tsx";
+import {useSetRecoilState} from "recoil";
 //import {Simulate} from "react-dom/test-utils";
 //import error = Simulate.error;
 enum User{
@@ -15,6 +17,7 @@ enum User{
 
 function Signin() {
     useRedirect();
+    const setUserType = useSetRecoilState(USerType);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [type, setType] = useState(User.student);
@@ -30,6 +33,7 @@ function Signin() {
                     if(data.msg === "success"){
                         const token: string = "Bearer " + data.token;
                         localStorage.setItem("easyRevalToken", token);
+                        setUserType(User.student);
                         navigate("/student")
 
                     }
@@ -51,6 +55,7 @@ function Signin() {
                     if(data.msg === "success"){
                         const token: string = "Bearer " + data.token;
                         localStorage.setItem("easyRevalToken", token);
+                        setUserType(User.teacher);
                         navigate("/teacher")
                     }
                 })
@@ -71,6 +76,7 @@ function Signin() {
                     if(data.msg === "success"){
                         const token: string = "Bearer " + data.token;
                         localStorage.setItem("easyRevalToken", token);
+                        setUserType(User.admin);
                         navigate("/admin");
                     }
                 })
