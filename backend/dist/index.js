@@ -9,6 +9,7 @@ const Admin_1 = __importDefault(require("./routes/Admin"));
 const Student_1 = __importDefault(require("./routes/Student"));
 const Teacher_1 = __importDefault(require("./routes/Teacher"));
 const Whoami_1 = __importDefault(require("./routes/Whoami"));
+const Register_1 = __importDefault(require("./routes/Register"));
 const app = (0, express_1.default)();
 const port = 3000;
 const jwtSecret = process.env.JWT_SECRET || "yogiman";
@@ -18,6 +19,7 @@ app.use("/whoami", Whoami_1.default);
 app.use("/admin", Admin_1.default);
 app.use("/student", Student_1.default);
 app.use("/teacher", Teacher_1.default);
+app.use("/register", Register_1.default);
 app.listen(port, () => {
     console.log(`Server started on port ${port}`);
 });

@@ -1,29 +1,36 @@
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import axios from "axios";
 import {useNavigate} from "react-router-dom";
-import {useRecoilValue} from "recoil";
+import { useSetRecoilState} from "recoil";
 
 import {USerType} from "../stores/atoms/UserType.tsx";
+import {Username} from "../stores/atoms/UserName.tsx";
+import {UserUserName} from "../stores/atoms/UserUserName.tsx";
 enum User{
     student,
     teacher,
     admin,
-    unknow
 }
 
 interface WhoAmIResponse {
     msg: string;
     type: User;
+    name : string;
+    username : string;
 }
 
-
-function useVerify(){
+function useVerify(n : User){
+    const setUserType = useSetRecoilState(USerType);
+    const setUserName = useSetRecoilState(Username);
+    const setUserUserName = useSetRecoilState(UserUserName);
     const navigate = useNavigate();
-    const UserType : User = useRecoilValue(USerType);
-    useEffect(() => {
+    const [done ,setDone] = useState(false);
+    useEffect(()=> {
         const token = localStorage.getItem("easyRevalToken");
         if(token === null){
-            return;
+            setDone(true);
+            navigate("/signin");
+            return
         }
         axios.get<WhoAmIResponse>("http://localhost:3000/whoami", {
             headers : {
@@ -31,19 +38,28 @@ function useVerify(){
             }
         })
             .then((response:any) => {
+                console.log(response)
                 if(response.data.msg === "success"){
-                    if(response.data.type !== UserType){
+                    if(response.data.type !== n){
                         localStorage.removeItem("easyRevalToken");
                         navigate("/signin");
                     }
+                    else{
+                        setUserType(response.data.type)
+                        setUserName(response.data.name);
+                        setUserUserName(response.data.username);
+                    }
+                    setDone(true);
                 }
             })
             .catch((error:any) => {
                 console.log(error);
                 localStorage.removeItem("easyRevalToken");
                 navigate("/signin");
+
             })
     },[])
+    return done;
 }
 
 export default useVerify;

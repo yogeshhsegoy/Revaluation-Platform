@@ -41,11 +41,12 @@ router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* 
         });
         if (result) {
             if (result.password === password) {
-                const token = jsonwebtoken_1.default.sign({ username, type: User.student }, jwtSecret);
+                const token = jsonwebtoken_1.default.sign({ username: username, type: User.student, name: result.name }, jwtSecret);
                 res.status(200).json({
                     msg: "success",
                     token: token,
-                    type: User.student
+                    type: User.student,
+                    name: result.name
                 });
             }
             else {

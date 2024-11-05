@@ -4,6 +4,7 @@ import adminRouter from "./routes/Admin"
 import studentRouter from "./routes/Student"
 import teacherRouter from "./routes/Teacher"
 import WhoamiRouter from "./routes/Whoami";
+import registerRouter from "./routes/Register";
 const app = express();
 const port : number = 3000;
 const jwtSecret = process.env.JWT_SECRET || "yogiman";
@@ -16,7 +17,7 @@ app.use("/whoami",WhoamiRouter);
 app.use("/admin",adminRouter);
 app.use("/student",studentRouter);
 app.use("/teacher",teacherRouter);
-app.use("/register",)
+app.use("/register",registerRouter);
 
 
 app.listen(port, () => {

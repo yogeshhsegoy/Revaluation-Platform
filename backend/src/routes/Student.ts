@@ -33,11 +33,12 @@ router.post("/login",async (req,res)=>{
 
         if(result){
             if(result.password === password){
-                const token = jwt.sign({username,type:User.student},jwtSecret);
+                const token = jwt.sign({username:username,type:User.student,name:result.name},jwtSecret);
                 res.status(200).json({
                     msg : "success",
                     token : token,
-                    type : User.student
+                    type : User.student,
+                    name : result.name
                 })
             }
             else{
