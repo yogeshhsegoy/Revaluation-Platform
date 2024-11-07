@@ -1,23 +1,23 @@
 import React from "react";
-import {useNavigate} from "react-router-dom";
+// import {useNavigate} from "react-router-dom";
 import { useState } from "react";
 
 interface FeatureCardProps {
     svg: JSX.Element; // For SVG, we will pass JSX directly
     title: string;
     description: string;
-    route: string; // Path to navigate when the card is clicked
+
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ svg, title, description, route }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ svg, title, description }) => {
     const [isHovered, setIsHovered] = useState(false);
-    const navigate = useNavigate();
+    //const navigate = useNavigate();
     return (
             <div
                 className={`transition-all duration-300 ease-in-out transform p-6 rounded-lg border bg-white shadow-lg group-hover:scale-105 group-hover:shadow-2xl ${isHovered ? 'scale-105 shadow-2xl' : ''}`}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onClick={() => navigate(route)}
+
             >
 
                 <div className="flex justify-center items-center">
