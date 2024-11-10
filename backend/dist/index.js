@@ -14,7 +14,7 @@ const app = (0, express_1.default)();
 const port = 3000;
 const jwtSecret = process.env.JWT_SECRET || "yogiman";
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: "50mb" }));
 app.use("/whoami", Whoami_1.default);
 app.use("/admin", Admin_1.default);
 app.use("/student", Student_1.default);

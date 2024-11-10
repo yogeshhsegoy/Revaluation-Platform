@@ -76,24 +76,24 @@ model Exam {
 }
 
 model Paper {
-  id               Int            @id @default(autoincrement())
-  marks            Int
-  questionPaperUrl String         @unique
-  subjectId        Int
-  subject          Subject        @relation(fields: [subjectId], references: [id])
-  examId           Int
-  exam             Exam           @relation(fields: [examId], references: [id])
-  answersheets     AnswerSheets[]
+  id            Int            @id @default(autoincrement())
+  marks         Int
+  questionPaper Bytes
+  subjectId     Int
+  subject       Subject        @relation(fields: [subjectId], references: [id])
+  examId        Int
+  exam          Exam           @relation(fields: [examId], references: [id])
+  answersheets  AnswerSheets[]
 }
 
 model AnswerSheets {
-  id             Int     @id @default(autoincrement())
-  marksScored    Int
-  answerPaperUrl String  @unique
-  paperId        Int
-  paper          Paper   @relation(fields: [paperId], references: [id])
-  applyReval     Boolean
-  RevalDone      Boolean
-  studentId      Int // Foreign key to Student
-  student        Student @relation(fields: [studentId], references: [id])
+  id          Int     @id @default(autoincrement())
+  marksScored Int
+  answerPaper Bytes
+  paperId     Int
+  paper       Paper   @relation(fields: [paperId], references: [id])
+  applyReval  Boolean
+  RevalDone   Boolean
+  studentId   Int // Foreign key to Student
+  student     Student @relation(fields: [studentId], references: [id])
 }

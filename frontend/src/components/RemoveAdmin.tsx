@@ -1,47 +1,53 @@
 import { useState } from "react";
+import axios from "axios";
+
 
 function RemoveAdmin({ onClick }: { onClick: () => void }) {
     const [username, setUsername] = useState("");
+    const [notification,setNotification] = useState("");
+    const [view,setView] = useState(false);
+    const handleSubmit = () => {
+        axios.post("http://localhost:3000/admin/remove-admin", {
+            username,
+        },{
+            headers : {
+                authorization : localStorage.getItem("easyRevalToken"),
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!username) {
-            alert("Username is required!");
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/removeAdmin/${username}`, {
-                method: "DELETE",
-            });
-
-            if (response.ok) {
-                alert("Admin removed successfully.");
-            } else {
-                alert("Failed to remove admin.");
             }
-        } catch (error) {
-            console.error("Error removing admin:", error);
-            alert("An error occurred.");
-        }
-    };
+        }).then((response)=>{
+            const data:any = response.data;
+            if(response.status === 200){
+                setNotification(data.msg);
+                setView(true);
+            }
+        })
+            .catch((error:any)=>{
+                if(error.response){
+                    setNotification(error.response.data.msg);
+                    setView(true);
+                }
+            })
+    }
 
     return (
         <div className="z-20 fixed top-0 left-0 backdrop-blur w-full h-screen flex flex-col items-center justify-center">
-            <div className="fixed top-2 left-2" onClick={onClick}>
+            <div className={"fixed top-2 left-2"} onClick={onClick}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5"
                      stroke="currentColor" className="size-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </div>
             <div className="shadow-2xl p-8 bg-white">
+                <div className={"text-xl font-semibold text-red-400"}>
+                    {
+                        view ? notification + " !!!" : " "
+                    }
+                </div>
                 <div className="flex items-center justify-center">
                     <p className="text-xl font-semibold">Remove Admin</p>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                    {/* Username Input */}
+
                     <div className="mb-4">
                         <label className="block text-sm font-semibold text-gray-700">Username</label>
                         <input
@@ -57,10 +63,10 @@ function RemoveAdmin({ onClick }: { onClick: () => void }) {
                     <button
                         type="submit"
                         className="w-full bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200"
+                        onClick={handleSubmit}
                     >
                         Remove Admin
                     </button>
-                </form>
             </div>
         </div>
     );

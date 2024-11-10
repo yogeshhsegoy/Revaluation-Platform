@@ -4,7 +4,7 @@ import {PrismaClient} from '@prisma/client';
 
 
 const router = Router();
-const prisma = new PrismaClient();
+const prisma: PrismaClient= new PrismaClient({log:["query","info"]});
 const RegisterInput = zod.object({
     organizationName  : zod.string(),
     organizationCode : zod.string(),

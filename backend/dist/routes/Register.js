@@ -16,7 +16,7 @@ const express_1 = require("express");
 const zod_1 = __importDefault(require("zod"));
 const client_1 = require("@prisma/client");
 const router = (0, express_1.Router)();
-const prisma = new client_1.PrismaClient();
+const prisma = new client_1.PrismaClient({ log: ["query", "info"] });
 const RegisterInput = zod_1.default.object({
     organizationName: zod_1.default.string(),
     organizationCode: zod_1.default.string(),

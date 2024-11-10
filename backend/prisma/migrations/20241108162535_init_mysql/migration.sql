@@ -51,18 +51,21 @@ CREATE TABLE `Subject` (
     `subjectCode` VARCHAR(191) NOT NULL,
     `organizationId` INTEGER NOT NULL,
 
+    UNIQUE INDEX `Subject_subjectCode_key`(`subjectCode`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `Exam` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
     `startTime` DATETIME(3) NOT NULL,
     `endTime` DATETIME(3) NOT NULL,
     `revalOpenStart` DATETIME(3) NULL,
     `revalOpenEnd` DATETIME(3) NULL,
     `organizationId` INTEGER NOT NULL,
 
+    UNIQUE INDEX `Exam_name_key`(`name`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -70,11 +73,10 @@ CREATE TABLE `Exam` (
 CREATE TABLE `Paper` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `marks` INTEGER NOT NULL,
-    `questionPaperUrl` VARCHAR(191) NOT NULL,
+    `questionPaper` LONGBLOB NOT NULL,
     `subjectId` INTEGER NOT NULL,
     `examId` INTEGER NOT NULL,
 
-    UNIQUE INDEX `Paper_questionPaperUrl_key`(`questionPaperUrl`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -82,12 +84,12 @@ CREATE TABLE `Paper` (
 CREATE TABLE `AnswerSheets` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `marksScored` INTEGER NOT NULL,
-    `answerPaperUrl` VARCHAR(191) NOT NULL,
+    `answerPaper` LONGBLOB NOT NULL,
     `paperId` INTEGER NOT NULL,
     `applyReval` BOOLEAN NOT NULL,
     `RevalDone` BOOLEAN NOT NULL,
+    `studentId` INTEGER NOT NULL,
 
-    UNIQUE INDEX `AnswerSheets_answerPaperUrl_key`(`answerPaperUrl`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -123,6 +125,9 @@ ALTER TABLE `Paper` ADD CONSTRAINT `Paper_examId_fkey` FOREIGN KEY (`examId`) RE
 
 -- AddForeignKey
 ALTER TABLE `AnswerSheets` ADD CONSTRAINT `AnswerSheets_paperId_fkey` FOREIGN KEY (`paperId`) REFERENCES `Paper`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `AnswerSheets` ADD CONSTRAINT `AnswerSheets_studentId_fkey` FOREIGN KEY (`studentId`) REFERENCES `Student`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `_TeacherSubjects` ADD CONSTRAINT `_TeacherSubjects_A_fkey` FOREIGN KEY (`A`) REFERENCES `Subject`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

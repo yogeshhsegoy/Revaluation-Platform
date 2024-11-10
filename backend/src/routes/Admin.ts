@@ -2,8 +2,9 @@ import {Router} from 'express';
 import zod from "zod";
 import {PrismaClient} from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { Request, Response } from 'express';
 const router : Router = Router();
-const prisma: PrismaClient= new PrismaClient();
+const prisma: PrismaClient= new PrismaClient({log:["query","info"]});
 const jwtSecret = process.env.JWT_SECRET || "yogiman";
 
 import authorize from "../middlewares/authorize";
@@ -55,7 +56,7 @@ router.post("/login",async (req,res)=>{
 
         if(result){
             if(result.password === password){
-                const token = jwt.sign({username:username,type:User.admin,name:result.name},jwtSecret);
+                const token = jwt.sign({username:username,type:User.admin,name:result.name,organizationId:result.organizationId},jwtSecret);
                 res.status(200).json({
                     msg : "success",
                     token : token,
@@ -88,9 +89,18 @@ router.post("/add-admin",authorize,async (req,res)=>{
     const username = req.body.username;
     const name = req.body.name;
     const password = req.body.password;
-    const organizationId = req.headers.authorization===undefined?0: parseInt(req.headers.authorization);
+    const organizationId: number  = req.headers.organizationId
+        ? parseInt(req.headers.organizationId as string)
+        : 0;
+
     const valid = addAdminInput.safeParse({name,username, password});
     if(valid.success){
+        if(!username.startsWith(req.headers.code)){
+            res.status(401).json({
+                msg : "it should begin with organization code"
+            })
+            return;
+        }
         const result = await prisma.admin.findUnique({
             where : {
                 username:username
@@ -121,12 +131,19 @@ router.post("/add-teacher", authorize, async (req, res) => {
     const username = req.body.username;
     const name = req.body.name;
     const password = req.body.password;
-    const organizationId = req.headers.authorization === undefined ? 0 : parseInt(req.headers.authorization);
-
+    const organizationId: number  = req.headers.organizationId
+        ? parseInt(req.headers.organizationId as string)
+        : 0;
     // Validate input using your custom input validation schema (e.g., addTeacherInput)
     const valid = addTeacherInput.safeParse({ name, username, password });
 
     if (valid.success) {
+        if(!username.startsWith(req.headers.code)){
+            res.status(401).json({
+                msg : "it should begin with organization code"
+            })
+            return;
+        }
         // Check if teacher with the same username already exists
         const result = await prisma.teacher.findUnique({
             where: {
@@ -168,12 +185,19 @@ router.post("/add-student", authorize, async (req, res) => {
     const username = req.body.username;
     const name = req.body.name;
     const password = req.body.password;
-    const organizationId = req.headers.authorization === undefined ? 0 : parseInt(req.headers.authorization);
-
+    const organizationId: number  = req.headers.organizationId
+        ? parseInt(req.headers.organizationId as string)
+        : 0;
     // Validate input using your custom input validation schema (e.g., addStudentInput)
     const valid = addStudentInput.safeParse({ name, username, password });
 
     if (valid.success) {
+        if(!username.startsWith(req.headers.code)){
+            res.status(401).json({
+                msg : "it should begin with organization code"
+            })
+            return;
+        }
         // Check if student with the same username already exists
         const result = await prisma.student.findUnique({
             where: {
@@ -214,9 +238,17 @@ router.post("/add-student", authorize, async (req, res) => {
 router.post("/add-subject",authorize,async (req,res)=>{
     const name = req.body.name;
     const subjectCode = req.body.subjectCode;
-    const organizationId = req.headers.organizationid ? parseInt(req.headers.organizationid as string) : 0;
+    const organizationId: number  = req.headers.organizationId
+        ? parseInt(req.headers.organizationId as string)
+        : 0;
     const valid = addSubject.safeParse({name,subjectCode});
     if(valid.success){
+        if(!subjectCode.startsWith(req.headers.code)){
+            res.status(401).json({
+                msg : "it should begin with organization code"
+            })
+            return;
+        }
         const result = await prisma.subject.findUnique({
             where: {
                 subjectCode : subjectCode
@@ -231,7 +263,7 @@ router.post("/add-subject",authorize,async (req,res)=>{
         }
 
         // Create the new student
-        await prisma.subject.create({
+        const sub =  await prisma.subject.create({
             data: {
                 name : name,
                 subjectCode : subjectCode,
@@ -240,7 +272,8 @@ router.post("/add-subject",authorize,async (req,res)=>{
         });
 
         res.status(200).json({
-            msg: "Subject added successfully"
+            msg: "Subject added successfully id is " + sub.id,
+            id : sub.id
         });
     }
     else{
@@ -361,40 +394,144 @@ router.post("/remove-student", authorize, async (req, res) => {
     });
 });
 
-router.post("/remove-subject", authorize, async (req, res) => {
+router.post("/remove-subject", authorize, async (req,res)=>{
     const subjectCode = req.body.subjectCode;
-
     if (!subjectCode) {
-        return res.status(400).json({
-            msg: "Subject code is required"
-        });
+        res.status(400).json({
+            msg: "Invalid Subject Code"
+        })
     }
-
-    // Check if the subject exists
     const subject = await prisma.subject.findUnique({
-        where: {
-            subjectCode: subjectCode
+        where : {
+            subjectCode : subjectCode
         }
-    });
-
-    if (!subject) {
-        return res.status(404).json({
+    })
+    if (!subject){
+        res.status(404).json({
             msg: "Subject not found"
-        });
+        })
+        return ;
     }
 
-    // Delete the subject record
     await prisma.subject.delete({
-        where: {
-            subjectCode: subjectCode
+        where : {
+            subjectCode : subjectCode
         }
-    });
-
+    })
     res.status(200).json({
         msg: "Subject removed successfully"
-    });
+    })
+})
+
+
+
+router.post("/add-exam", authorize, async (req: Request, res: Response) => {
+    try {
+        const { name, startTime, endTime, revalOpenStart, revalOpenEnd, papers } = req.body;
+        const organizationId: number  = req.headers.organizationId
+            ? parseInt(req.headers.organizationId as string)
+            : 0;
+        // console.log(name);
+        // console.log(startTime);
+        // console.log(endTime);
+        // console.log(organizationId);
+        // console.log(!Array.isArray(papers))
+        // console.log(papers.length !== 0)
+        if (!name || !startTime || !endTime || !organizationId || !Array.isArray(papers) || papers.length === 0) {
+            res.status(400).json({ message: "Missing or invalid required fields" });
+            return;
+        }
+
+        const exam = await prisma.exam.create({
+            data: {
+                name,
+                startTime: new Date(startTime),
+                endTime: new Date(endTime),
+                revalOpenStart: revalOpenStart ? new Date(revalOpenStart) : null,
+                revalOpenEnd: revalOpenEnd ? new Date(revalOpenEnd) : null,
+                organizationId,
+                paper: {
+                    create: papers.map((paper: { maxMarks: string; questionPaper: string; subjectId: string }) => ({
+                        marks: parseInt(paper.maxMarks, 10),
+                        questionPaper: Buffer.from(paper.questionPaper, "base64"),
+                        subject: {
+                            connect: { id: parseInt(paper.subjectId, 10) },
+                        },
+                    })),
+                },
+            },
+        });
+
+        res.status(201).json({ message: "Exam created successfully", exam });
+    } catch (error) {
+        console.error("Error adding exam:", error);
+        res.status(500).json({ message: "An error occurred while adding the exam" });
+    }
 });
 
+router.post("/add-answersheet", authorize, async (req: Request, res: Response) => {
+    try {
+        const { marksScored, answerSheet, paperId, studentId } = req.body;
+        const organizationId: number  = req.headers.organizationId
+            ? parseInt(req.headers.organizationId as string)
+            : 0;
+
+        if (!marksScored || !answerSheet || !paperId || !studentId || !organizationId) {
+            res.status(400).json({ message: "Missing or invalid required fields" });
+            return;
+        }
+
+        const student = await prisma.student.findFirst({
+            where: {
+                id: parseInt(studentId, 10),
+                organizationId
+            }
+        });
+
+        if (!student) {
+            res.status(404).json({ message: "Student not found in this organization" });
+            return;
+        }
+
+        const paper = await prisma.paper.findFirst({
+            where: {
+                id: parseInt(paperId, 10),
+                exam: {
+                    organizationId
+                }
+            },
+            include: {
+                exam: true
+            }
+        });
+
+        if (!paper) {
+            res.status(404).json({ message: "Paper not found in this organization" });
+            return;
+        }
+
+        if (parseInt(marksScored, 10) > paper.marks) {
+            res.status(400).json({ message: "Marks scored cannot be greater than maximum marks" });
+            return;
+        }
+
+        const answersheet = await prisma.answerSheets.create({
+            data: {
+                marksScored: parseInt(marksScored, 10),
+                answerPaper: Buffer.from(answerSheet, "base64"),
+                paperId: parseInt(paperId, 10),
+                studentId: parseInt(studentId, 10),
+                applyReval: false,
+                RevalDone: false
+            }
+        });
+
+        res.status(201).json({ message: "Answer sheet added successfully", answersheet });
+    } catch (error) {
+        console.error("Error adding answer sheet:", error);
+        res.status(500).json({ message: "An error occurred while adding the answer sheet" });
+    }
+});
 
 
 export default router

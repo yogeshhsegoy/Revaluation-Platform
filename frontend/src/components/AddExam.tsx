@@ -1,80 +1,144 @@
 import { useState } from "react";
+import Input from "./Input.tsx";
+import axios from "axios";
+
+// Paper type definition
+type Paper = {
+    maxMarks: string;
+    questionPaperFile: File | null;
+    subjectId: string;
+};
 
 function AddExam({ onClick }: { onClick: () => void }) {
+    const [name, setName] = useState("");
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
-    const [papers, setPapers] = useState([
+    const [papers, setPapers] = useState<Paper[]>([
         { maxMarks: "", questionPaperFile: null, subjectId: "" }
     ]);
+    const [error, setError] = useState<string | null>(null);
 
-    // Handle adding a new paper
     const handleAddPaper = () => {
         setPapers([...papers, { maxMarks: "", questionPaperFile: null, subjectId: "" }]);
     };
 
-    // Handle changes in paper fields
-    const handlePaperChange = (index: number, field: string, value: string) => {
-        const updatedPapers = [...papers]; // Create a copy of the current papers array
-        updatedPapers[index][field] = value; // Update the specific field for the paper
-        setPapers(updatedPapers); // Set the updated papers array as the new state
+    const handlePaperChange = (index: number, field: keyof Paper, value: string) => {
+        const updatedPapers = [...papers];
+        updatedPapers[index][field] = value;
+        setPapers(updatedPapers);
     };
 
-    // Handle file input change
     const handleFileChange = (index: number, file: File | null) => {
-        const updatedPapers = [...papers]; // Copy the papers array
-        updatedPapers[index].questionPaperFile = file; // Assign the selected file to the specific paper
-        setPapers(updatedPapers); // Set the updated papers array as the new state
+        const updatedPapers = [...papers];
+        updatedPapers[index].questionPaperFile = file;
+        setPapers(updatedPapers);
     };
 
-    // Handle form submission
-    const handleSubmit = async () => {
-        const formData = new FormData();
+    const validateForm = () => {
+        if (!startTime || !endTime) {
+            setError("Start time and end time are required.");
+            return false;
+        }
 
-        // Append exam details (start and end time)
-        formData.append("startTime", startTime);
-        formData.append("endTime", endTime);
+        if (new Date(startTime) >= new Date(endTime)) {
+            setError("End time must be after start time.");
+            return false;
+        }
 
-        // Append papers details
-        papers.forEach((paper, index) => {
-            formData.append(`papers[${index}][maxMarks]`, paper.maxMarks);
-            formData.append(`papers[${index}][subjectId]`, paper.subjectId);
-            if (paper.questionPaperFile) {
-                formData.append(`papers[${index}][questionPaper]`, paper.questionPaperFile);
+        for (let i = 0; i < papers.length; i++) {
+            const paper = papers[i];
+            if (!paper.maxMarks || !paper.subjectId) {
+                setError(`Max marks and subject ID are required for Paper ${i + 1}`);
+                return false;
             }
-        });
+            if (isNaN(Number(paper.maxMarks)) || Number(paper.maxMarks) <= 0) {
+                setError(`Max marks for Paper ${i + 1} should be a valid positive number.`);
+                return false;
+            }
+        }
+
+        setError(null);
+        return true;
+    };
+
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
 
         try {
-            const response = await fetch("/api/exams", {
-                method: "POST",
-                body: formData,
-            });
+            const papersWithBase64Files = await Promise.all(
+                papers.map(async (paper) => {
+                    let base64File = null;
+                    if (paper.questionPaperFile) {
+                        base64File = await convertFileToBase64(paper.questionPaperFile);
+                    }
 
-            if (response.ok) {
-                // Handle success, maybe show a success message or clear the form
+                    return {
+                        ...paper,
+                        questionPaper: base64File,
+                    };
+                })
+            );
+
+            const examData = {
+                name,
+                startTime,
+                endTime,
+                papers: papersWithBase64Files,
+            };
+
+            const response = await axios.post(
+                "http://localhost:3000/admin/add-exam",
+                examData,
+                {
+                    headers: {
+                        "Authorization": localStorage.getItem("easyRevalToken") || "",
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.status === 201) {
                 console.log("Exam added successfully");
+                setName("");
+                setStartTime("");
+                setEndTime("");
+                setPapers([{ maxMarks: "", questionPaperFile: null, subjectId: "" }]);
             } else {
-                // Handle failure
                 console.error("Failed to add exam");
+                setError("Failed to add exam. Please try again.");
             }
         } catch (error) {
             console.error("Error submitting exam:", error);
+            setError("An error occurred while submitting the exam.");
         }
+    };
+
+    const convertFileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = (reader.result as string).split(",")[1];
+                resolve(base64String);
+            };
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
     };
 
     return (
         <div className="z-20 fixed top-0 left-0 backdrop-blur w-full h-screen flex flex-col items-center justify-center">
-            <div className={"fixed top-2 left-2"} onClick={onClick}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5"
-                     stroke="currentColor" className="size-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12"/>
+            <div className="fixed top-2 left-2" onClick={onClick}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </div>
-            <div className={"shadow-2xl p-8 bg-white max-h-screen overflow-scroll"}>
-                <div className={"flex items-center justify-center"}>
-                    <p className={"text-xl font-semibold"}>Add Exam</p>
+            <div className="shadow-2xl p-8 bg-white max-h-screen overflow-scroll">
+                <div className="flex items-center justify-center">
+                    <p className="text-xl font-semibold">Add Exam</p>
                 </div>
 
-                {/* Exam start and end time */}
+                {error && <div className="mb-4 text-red-500">{error}</div>}
+                <Input label={"name"} placeholder={"Exam Name"} onChange={(e) => setName(e.target.value)}/>
                 <div className="mb-4">
                     <label className="block text-sm font-semibold text-gray-700">Start Time</label>
                     <input
@@ -94,12 +158,10 @@ function AddExam({ onClick }: { onClick: () => void }) {
                     />
                 </div>
 
-                {/* Papers Section */}
                 <div className="mt-4">
                     <p className="text-lg font-semibold">Papers</p>
                     {papers.map((paper, index) => (
                         <div key={index} className="border p-4 mt-4">
-                            {/* Max Marks */}
                             <div className="mb-4">
                                 <label className="block text-sm font-semibold text-gray-700">
                                     Max Marks (Paper {index + 1})
@@ -113,7 +175,6 @@ function AddExam({ onClick }: { onClick: () => void }) {
                                 />
                             </div>
 
-                            {/* Question Paper File (PDF) */}
                             <div className="mb-4">
                                 <label className="block text-sm font-semibold text-gray-700">
                                     Question Paper (PDF)
@@ -126,7 +187,6 @@ function AddExam({ onClick }: { onClick: () => void }) {
                                 />
                             </div>
 
-                            {/* Subject ID */}
                             <div className="mb-4">
                                 <label className="block text-sm font-semibold text-gray-700">
                                     Subject ID (Paper {index + 1})
@@ -141,20 +201,13 @@ function AddExam({ onClick }: { onClick: () => void }) {
                             </div>
                         </div>
                     ))}
-                    <button
-                        onClick={handleAddPaper}
-                        className="mt-4 bg-green-500 text-white font-semibold py-2 px-4 rounded hover:bg-green-400 transition duration-200"
-                    >
-                        Add Paper
+                    <button onClick={handleAddPaper} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md">
+                        Add Another Paper
                     </button>
                 </div>
 
-                {/* Submit Button */}
-                <button
-                    onClick={handleSubmit}
-                    className="w-full bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200 mt-4"
-                >
-                    Add Exam
+                <button onClick={handleSubmit} className="mt-6 px-4 py-2 bg-green-500 text-white rounded-md">
+                    Submit
                 </button>
             </div>
         </div>

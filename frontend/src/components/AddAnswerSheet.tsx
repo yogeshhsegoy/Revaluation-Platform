@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useState } from "react";
 
 function AddAnswerSheet({ onClick }: { onClick: () => void }) {
@@ -5,43 +6,66 @@ function AddAnswerSheet({ onClick }: { onClick: () => void }) {
     const [answerSheetFile, setAnswerSheetFile] = useState<File | null>(null);
     const [paperId, setPaperId] = useState<number | "">("");
     const [studentId, setStudentId] = useState<number | "">("");
+    const [error, setError] = useState<string>("");
 
-    // Handle file change for answer sheet
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files ? e.target.files[0] : null;
-        setAnswerSheetFile(file);
+    const validateForm = (): boolean => {
+        if (!marksScored || !answerSheetFile || !paperId || !studentId) {
+            setError("All fields are required!");
+            return false;
+        }
+        setError("");
+        return true;
     };
 
-    // Handle form submission
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const convertFileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = (reader.result as string).split(",")[1];
+                resolve(base64String);
+            };
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    };
 
-        if (!marksScored || !answerSheetFile || !paperId || !studentId) {
-            alert("All fields are required!");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("marksScored", marksScored.toString());
-        formData.append("answerSheet", answerSheetFile);
-        formData.append("paperId", paperId.toString());
-        formData.append("studentId", studentId.toString());
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
 
         try {
-            const response = await fetch("/api/answerSheets", {
-                method: "POST",
-                body: formData,
-            });
+            const base64File = await convertFileToBase64(answerSheetFile as File);
 
-            if (response.ok) {
-                // Handle success, maybe show a success message or clear the form
-                console.log("Answer Sheet added successfully");
+            const answerSheetData = {
+                marksScored,
+                answerSheet: base64File,
+                paperId,
+                studentId,
+            };
+
+            const response = await axios.post(
+                "http://localhost:3000/admin/add-answersheet",
+                answerSheetData,
+                {
+                    headers: {
+                        "Authorization": localStorage.getItem("easyRevalToken") || "",
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.status === 201) {
+                console.log("Answer sheet added successfully");
+                setMarksScored("");
+                setAnswerSheetFile(null);
+                setPaperId("");
+                setStudentId("");
             } else {
-                // Handle failure
                 console.error("Failed to add answer sheet");
+                setError("Failed to add answer sheet. Please try again.");
             }
         } catch (error) {
             console.error("Error submitting answer sheet:", error);
+            setError("An error occurred while submitting the answer sheet.");
         }
     };
 
@@ -50,7 +74,7 @@ function AddAnswerSheet({ onClick }: { onClick: () => void }) {
             <div className="fixed top-2 left-2" onClick={onClick}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5"
                      stroke="currentColor" className="size-6">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </div>
             <div className="shadow-2xl p-8 bg-white">
@@ -58,8 +82,12 @@ function AddAnswerSheet({ onClick }: { onClick: () => void }) {
                     <p className="text-xl font-semibold">Add Answer Sheet</p>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                    {/* Marks Scored */}
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSubmit();
+                    }}
+                >
                     <div className="mb-4">
                         <label className="block text-sm font-semibold text-gray-700">Marks Scored</label>
                         <input
@@ -71,18 +99,16 @@ function AddAnswerSheet({ onClick }: { onClick: () => void }) {
                         />
                     </div>
 
-                    {/* Answer Sheet File */}
                     <div className="mb-4">
                         <label className="block text-sm font-semibold text-gray-700">Answer Sheet (PDF)</label>
                         <input
                             type="file"
                             accept=".pdf"
-                            onChange={handleFileChange}
+                            onChange={(e) => setAnswerSheetFile(e.target.files ? e.target.files[0] : null)}
                             className="w-full mt-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
 
-                    {/* Paper ID */}
                     <div className="mb-4">
                         <label className="block text-sm font-semibold text-gray-700">Paper ID</label>
                         <input
@@ -94,7 +120,6 @@ function AddAnswerSheet({ onClick }: { onClick: () => void }) {
                         />
                     </div>
 
-                    {/* Student ID */}
                     <div className="mb-4">
                         <label className="block text-sm font-semibold text-gray-700">Student ID</label>
                         <input
@@ -106,7 +131,8 @@ function AddAnswerSheet({ onClick }: { onClick: () => void }) {
                         />
                     </div>
 
-                    {/* Submit Button */}
+                    {error && <p className="text-red-500 mb-4">{error}</p>}
+
                     <button
                         type="submit"
                         className="w-full bg-[#133E87] text-white font-semibold py-2 px-4 rounded hover:bg-[#0f2f66] transition duration-200"
